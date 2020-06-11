@@ -21,9 +21,9 @@ import (
     "time"
     "io/ioutil"
     "strings"
-    util "bnc-eth/internal/app/util"
-    tool "bnc-eth/internal/tool"
-    com "bnc-eth/internal/com"
+    util "github.com/bxforce/bnc-eth/internal/app/util"
+    tool "github.com/bxforce/bnc-eth/internal/tool"
+    com "github.com/bxforce/bnc-eth/internal/com"
 )
 
 type engine interface {

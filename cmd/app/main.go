@@ -22,7 +22,7 @@ import (
     "time"
     "errors"
 	"github.com/urfave/cli/v2"
-    node "bnc-eth/internal/app/node"
+    node "github.com/bxforce/bnc-eth/internal/app/node"
 )
 
 var app = cli.NewApp()

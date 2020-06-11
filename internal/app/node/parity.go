@@ -26,8 +26,8 @@ import (
     "io/ioutil"
     "encoding/json"
     "strings"
-    eth "bnc-eth/internal/eth"
-    box "bnc-eth/internal/box"
+    eth "github.com/bxforce/bnc-eth/internal/eth"
+    box "github.com/bxforce/bnc-eth/internal/box"
 )
 
 const (

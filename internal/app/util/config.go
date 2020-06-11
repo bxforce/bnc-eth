@@ -22,7 +22,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "gopkg.in/yaml.v2"
-    box "bnc-eth/internal/box"
+    box "github.com/bxforce/bnc-eth/internal/box"
 )
 
 type config struct {

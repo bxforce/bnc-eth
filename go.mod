@@ -1,4 +1,4 @@
-module bnc-eth
+module github.com/bxforce/bnc-eth
 
 go 1.14
 

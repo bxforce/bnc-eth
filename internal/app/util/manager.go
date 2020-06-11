@@ -20,7 +20,7 @@ import (
     "log"
     "errors"
     "path/filepath"
-    com "bnc-eth/internal/com"
+    com "github.com/bxforce/bnc-eth/internal/com"
 )
 
 var (
