@@ -26,7 +26,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "strings"
-    eth "github.com/bxforce/bnc-eth/internal/eth"
+    eth "github.com/bxforce/bnc-eth/eth"
     box "github.com/bxforce/bnc-eth/internal/box"
 )
 

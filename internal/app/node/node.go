@@ -23,7 +23,7 @@ import (
     "strings"
     util "github.com/bxforce/bnc-eth/internal/app/util"
     tool "github.com/bxforce/bnc-eth/internal/tool"
-    com "github.com/bxforce/bnc-eth/internal/com"
+    com "github.com/bxforce/bnc-eth/com"
 )
 
 type engine interface {
