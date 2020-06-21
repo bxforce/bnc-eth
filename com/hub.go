@@ -17,21 +17,21 @@ limitations under the License.
 package com
 
 import (
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"github.com/gorilla/websocket"
 )
 
 // This struct handles socket connection in the Hub
 type Member struct {
-	id string
-	hub *Hub
+	id   string
+	hub  *Hub
 	conn *websocket.Conn
 	sock chan []byte
 }
 
 type Message struct {
-	member *Member
+	member  *Member
 	content []byte
 }
 
@@ -81,20 +81,22 @@ func (member *Member) write() {
 // This struct handles multiple members socket to collect their infos
 // and then send them back the output of the gathering (aka a genesis)
 type Hub struct {
-	members map[*Member]bool
-	register chan *Member
+	members    map[*Member]bool
+	register   chan *Member
 	unregister chan *Member
-	process chan *Message
-	collect CollectHandler
-	generate GenerateHandler
-	complete CompleteHandler
+	process    chan *Message
+	collect    CollectHandler
+	generate   GenerateHandler
+	complete   CompleteHandler
 }
 
 // Collect member infos and return nil until the amount of members is reached
-type CollectHandler func(message string) (string)
+type CollectHandler func(message string) string
+
 // Generate genesis if the amount of members is reached
-type GenerateHandler func() (map[string][]byte)
-// Complete the hub and end the listening 
+type GenerateHandler func() map[string][]byte
+
+// Complete the hub and end the listening
 type CompleteHandler func()
 
 // Create a hub
@@ -105,19 +107,19 @@ func NewHub(collect CollectHandler, generate GenerateHandler, complete CompleteH
 		unregister: make(chan *Member),
 		process:    make(chan *Message),
 		collect:    collect,
-		generate:    generate,
-		complete:    complete,
+		generate:   generate,
+		complete:   complete,
 	}
 }
 
 // Handle a new member socket connection
 func (hub *Hub) HandleConnection(resp http.ResponseWriter, req *http.Request) {
-    upgrader := websocket.Upgrader{ ReadBufferSize:  1024, WriteBufferSize: 1024 }
-    conn, err := upgrader.Upgrade(resp, req, nil)
-    if err != nil {
-	    log.Fatal(err)
-        return
-    }
+	upgrader := websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
+	conn, err := upgrader.Upgrade(resp, req, nil)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	member := &Member{hub: hub, conn: conn, sock: make(chan []byte, 256)}
 	member.hub.register <- member
 	//log.Printf("open connection: %v", member.conn.RemoteAddr())
@@ -129,10 +131,10 @@ func (hub *Hub) HandleConnection(resp http.ResponseWriter, req *http.Request) {
 func (hub *Hub) Listen() {
 	for {
 		select {
-		case member  := <- hub.register:
+		case member := <-hub.register:
 			// register
 			hub.members[member] = true
-		case message := <- hub.process:
+		case message := <-hub.process:
 			// process input
 			message.member.id = hub.collect(string(message.content))
 			outputs := hub.generate()
@@ -142,7 +144,7 @@ func (hub *Hub) Listen() {
 					member.sock <- outputs[member.id]
 				}
 			}
-		case member  := <- hub.unregister:
+		case member := <-hub.unregister:
 			// unregister
 			if _, ok := hub.members[member]; ok {
 				member.conn.Close()
@@ -155,4 +157,3 @@ func (hub *Hub) Listen() {
 		}
 	}
 }
-

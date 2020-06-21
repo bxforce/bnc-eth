@@ -17,63 +17,83 @@ limitations under the License.
 package util
 
 import (
-    "log"
-    "os"
-    "io/ioutil"
-    "encoding/json"
-    "gopkg.in/yaml.v2"
-    box "github.com/bxforce/bnc-eth/internal/box"
+	"encoding/json"
+	box "github.com/bxforce/bnc-eth/internal/box"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
+	"os"
 )
 
 type config struct {
-    accounts map[string]string
-    topology map[string][]string
-    genesis map[string]interface{}
+	name       string
+	difficulty string
+	gasLimit   string
+	accounts   map[string]string
+	topology   map[string][]string
+	genesis    map[string]interface{}
+	configFile string
 }
 
 func NewConfig() (*config, error) {
-    genesisStr := string(box.Get("/genesis.json"))
+	genesisStr := string(box.Get("/genesis.json"))
 	genesis := make(map[string]interface{})
 	err := json.Unmarshal([]byte(genesisStr), &genesis)
-    return &config{accounts: make(map[string]string), topology: make(map[string][]string), genesis: genesis}, err
+	return &config{accounts: make(map[string]string), topology: make(map[string][]string), genesis: genesis}, err
 }
 
-func unmarshal(raw map[interface{}]interface{}, field string) map[string]string {
-    _, ok := raw[field]
-    if !ok {
-        log.Fatalf("error: field not found")
-    }
-    tab := raw[field].(map[interface{}]interface{})
-    output := make(map[string]string)
-    for key, value := range tab {
-        output[key.(string)] = value.(string)
-    }
-    return output
-}
-
-func (config *config) ParseConfig(configFile string)  {
+func (config *config) ParseConfig(configFile string) {
 	_, err := os.Stat(configFile)
-	if err != nil {
-		log.Fatal("Config file is missing: ", configFile)
+	if err == nil {
+		config.configFile = configFile
+		data, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		raw := make(map[interface{}]interface{})
+		err = yaml.Unmarshal([]byte(data), &raw)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		name, ok := raw["name"]
+		if ok {
+			config.name = name.(string)
+		}
+		gasLimit, ok := raw["gasLimit"]
+		if ok {
+			config.gasLimit = gasLimit.(string)
+		}
+		difficulty, ok := raw["difficulty"]
+		if ok {
+			config.difficulty = difficulty.(string)
+		}
+		accounts, ok := raw["accounts"]
+		if ok {
+			for key, value := range accounts.(map[interface{}]interface{}) {
+				config.accounts[key.(string)] = value.(string)
+			}
+		}
 	}
-    data, err := ioutil.ReadFile(configFile)
-    if err != nil {
-        log.Fatal(err)
-    }
-    raw := make(map[interface{}]interface{})
-    err = yaml.Unmarshal([]byte(data), &raw)
-    if err != nil {
-        log.Fatalf("error: %v", err)
-    }
-    config.accounts = unmarshal(raw, "accounts")
+}
+
+func (config *config) setParams() {
+	if len(config.name) > 0 {
+		config.genesis["name"] = config.name
+	}
+	if len(config.gasLimit) > 0 {
+		config.genesis["genesis"].(map[string]interface{})["gasLimit"] = config.gasLimit
+	}
+	if len(config.difficulty) > 0 {
+		config.genesis["genesis"].(map[string]interface{})["difficulty"] = config.difficulty
+	}
 }
 
 func (config *config) setValidators(validators interface{}) {
-    config.genesis["engine"].(map[string]interface{})["authorityRound"].(map[string]interface{})["params"].(map[string]interface{})["validators"].(map[string]interface{})["list"] = validators
+	config.genesis["engine"].(map[string]interface{})["authorityRound"].(map[string]interface{})["params"].(map[string]interface{})["validators"].(map[string]interface{})["list"] = validators
 }
 
 func (config *config) setAccounts(accounts map[string]string) {
-    for key, value := range accounts {
-        config.genesis["accounts"].(map[string]interface{})[key] = map[string]string{"balance": value}
-    }
+	for key, value := range accounts {
+		config.genesis["accounts"].(map[string]interface{})[key] = map[string]string{"balance": value}
+	}
 }

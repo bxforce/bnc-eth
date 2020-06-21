@@ -17,10 +17,10 @@ limitations under the License.
 package com
 
 import (
-	"log"
 	"encoding/json"
-	"net/url"
 	"github.com/gorilla/websocket"
+	"log"
+	"net/url"
 )
 
 // This struct handles socket connection to the hub
@@ -43,7 +43,7 @@ func (client *Client) setConnection(host string) {
 	if err != nil {
 		log.Fatal("dial:", err)
 	}
-	client.conn = conn 
+	client.conn = conn
 }
 
 // Send infos
@@ -55,7 +55,7 @@ func (client *Client) Send(message string) {
 }
 
 // Get genesis
-func (client *Client) Receive() (map[string]interface{}) {
+func (client *Client) Receive() map[string]interface{} {
 	_, message, err := client.conn.ReadMessage()
 	if err != nil {
 		log.Fatal("read:", err)
@@ -76,6 +76,3 @@ func (client *Client) Close() {
 	}
 	//client.conn.Close()
 }
-
-
-

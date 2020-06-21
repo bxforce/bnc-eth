@@ -17,19 +17,19 @@ limitations under the License.
 package tool
 
 import (
-    "log"
-    "os"
-    "os/exec"
-    "os/signal"
-    "context"
-    "path/filepath"
-    "io/ioutil"
+	"context"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
 )
 
 const (
-    defaultRootPath = "/var/www/localhost/htdocs"
-    defaultConfigPath = "/etc/lighttpd/lighttpd.conf"
-    defaultConfig = `
+	defaultRootPath   = "/var/www/localhost/htdocs"
+	defaultConfigPath = "/etc/lighttpd/lighttpd.conf"
+	defaultConfig     = `
 server.document-root = "/var/www/localhost/htdocs/" 
 server.port = 5000
 mimetype.assign = (
@@ -41,50 +41,50 @@ mimetype.assign = (
 )
 
 type LightServer struct {
-    cmd *exec.Cmd
+	cmd *exec.Cmd
 }
 
 func NewLightServer() *LightServer {
-    err := os.MkdirAll(defaultRootPath, os.ModePerm)
-    if err != nil {
+	err := os.MkdirAll(defaultRootPath, os.ModePerm)
+	if err != nil {
 		log.Fatal(err)
-    }
-    err = ioutil.WriteFile(defaultConfigPath, []byte(defaultConfig), os.ModePerm)
-    if err != nil {
+	}
+	err = ioutil.WriteFile(defaultConfigPath, []byte(defaultConfig), os.ModePerm)
+	if err != nil {
 		log.Fatal(err)
-    }
-    ctx, cancel := context.WithCancel(context.Background())
-    signals := make(chan os.Signal, 1)
-    signal.Notify(signals, os.Kill, os.Interrupt)
-    go func() {
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Kill, os.Interrupt)
+	go func() {
 		log.Println("signal: ", <-signals)
 		cancel()
 		os.Exit(0)
 	}()
-    server := &LightServer{}
-    server.cmd = exec.CommandContext(ctx, "lighttpd", "-D", "-f", defaultConfigPath)
-    //server.cmd.Stdout = os.Stdout
+	server := &LightServer{}
+	server.cmd = exec.CommandContext(ctx, "lighttpd", "-D", "-f", defaultConfigPath)
+	//server.cmd.Stdout = os.Stdout
 	//server.cmd.Stderr = os.Stderr
-    return server
+	return server
 }
 
 func (server *LightServer) Start() {
-    //log.Println(server.cmd.String())
-    err := server.cmd.Start()
+	//log.Println(server.cmd.String())
+	err := server.cmd.Start()
 	if err != nil {
 		log.Fatalf("cmd.Run() failed with %s\n", err)
 	}
 }
 
 func (server *LightServer) Stop() {
-    if err := server.cmd.Process.Kill(); err != nil {
-        log.Fatal("failed to kill process: ", err)
-    }
+	if err := server.cmd.Process.Kill(); err != nil {
+		log.Fatal("failed to kill process: ", err)
+	}
 }
 
 func (server *LightServer) Publish(filename string, content string) {
-    err := ioutil.WriteFile(filepath.Join(defaultRootPath, filename), []byte(content), os.ModePerm)
-    if err != nil {
+	err := ioutil.WriteFile(filepath.Join(defaultRootPath, filename), []byte(content), os.ModePerm)
+	if err != nil {
 		log.Fatal(err)
-    }
+	}
 }

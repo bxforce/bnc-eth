@@ -51,4 +51,3 @@ func Get(file string) []byte {
 func Has(file string) bool {
 	return box.Has(file)
 }
-

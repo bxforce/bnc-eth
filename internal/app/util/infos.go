@@ -17,52 +17,50 @@ limitations under the License.
 package util
 
 import (
-    "log"
-    "os"
-    "encoding/json"
+	"encoding/json"
+	"log"
+	"os"
 )
 
 var DefaultFaucetValue = "10000000000000000000000000000000000"
 
 type Infos struct {
-    Name string `json:"name"`
-    Address string `json:"address"`
-    PublicKey string `json:"publicKey"`
-    Host string `json:"host"`
-    IsValidator bool `json:"validator"`
-    Faucets map[string]string `json:"faucets"`
+	Name        string            `json:"name"`
+	Address     string            `json:"address"`
+	PublicKey   string            `json:"publicKey"`
+	Host        string            `json:"host"`
+	IsValidator bool              `json:"validator"`
+	Faucets     map[string]string `json:"faucets"`
 }
 
 func NewInfos(publicKey string, address string) *Infos {
-    infos := &Infos{Address: address, PublicKey: publicKey}
-    hostname, err := os.Hostname()
-    if err != nil {
-        log.Fatal(err)
-    }
-    host, exists := os.LookupEnv("ENODE_HOST")
-    if exists {
-        hostname = host
-    }
-    port, exists := os.LookupEnv("ENODE_PORT")
-    if ! exists {
-        port = "30303"
-    }
-    infos.Host = hostname+":"+port
-    infos.Faucets = map[string]string{address: DefaultFaucetValue}
-    return infos
+	infos := &Infos{Address: address, PublicKey: publicKey}
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal(err)
+	}
+	host, exists := os.LookupEnv("ENODE_HOST")
+	if exists {
+		hostname = host
+	}
+	port, exists := os.LookupEnv("ENODE_PORT")
+	if !exists {
+		port = "30303"
+	}
+	infos.Host = hostname + ":" + port
+	infos.Faucets = map[string]string{address: DefaultFaucetValue}
+	return infos
 }
 
 func (infos *Infos) Enode() string {
-    return "enode://"+infos.PublicKey+"@"+infos.Host
+	return "enode://" + infos.PublicKey + "@" + infos.Host
 }
 
 func ParseInfos(message string) *Infos {
 	infos := Infos{}
 	err := json.Unmarshal([]byte(message), &infos)
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &infos
 }
-
-

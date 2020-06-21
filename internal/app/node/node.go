@@ -17,154 +17,152 @@ limitations under the License.
 package node
 
 import (
-    "log"
-    "time"
-    "io/ioutil"
-    "strings"
-    util "github.com/bxforce/bnc-eth/internal/app/util"
-    tool "github.com/bxforce/bnc-eth/internal/tool"
-    com "github.com/bxforce/bnc-eth/com"
+	com "github.com/bxforce/bnc-eth/com"
+	util "github.com/bxforce/bnc-eth/internal/app/util"
+	tool "github.com/bxforce/bnc-eth/internal/tool"
+	"io/ioutil"
+	"log"
+	"strings"
+	"time"
 )
 
 type engine interface {
-    setPrivateKey(string)
-    setPeers(string)
-    setDiscover(bool)
-    initialize() (string, string)
-    configure(string)
-    run()
+	setPrivateKey(string)
+	setPeers(string)
+	setDiscover(bool)
+	initialize() (string, string)
+	configure(string)
+	run()
 }
 
 type server interface {
-    Serve()
-    SetHandler(com.WebsocketHandler)
-    Close()
+	Serve()
+	SetHandler(com.WebsocketHandler)
+	Close()
 }
 
 type manager interface {
-    Serve()
-    SetLimit(int)
-    SetConfig(config string)
-    GetGenesis() map[string]interface{}
-    GetNodes() []*util.Infos
-    GetHandleConnection() com.WebsocketHandler
+	Serve()
+	SetLimit(int)
+	SetConfig(config string)
+	GetGenesis() map[string]interface{}
+	GetNodes() []*util.Infos
+	GetHandleConnection() com.WebsocketHandler
 }
 
 /**
  * CONSTRUCTOR
  */
 type node struct {
-    engine engine
-    server server
-    manager manager
-    infos *util.Infos
-    light *tool.LightServer
+	engine  engine
+	server  server
+	manager manager
+	infos   *util.Infos
+	light   *tool.LightServer
 }
 
 func NewNode() (*node, error) {
-    node := &node{}
-    node.engine = engine( &parity{node: node} )
-    obj, err := util.NewManager(func () {
-        log.Printf("Close hub")
-        time.Sleep(2 * time.Second) // wait api send response
-        node.server.Close()
-    })
-    node.manager = manager(obj)
-    return node, err
+	node := &node{}
+	node.engine = engine(&parity{node: node})
+	obj, err := util.NewManager(func() {
+		log.Printf("Close hub")
+		time.Sleep(2 * time.Second) // wait api send response
+		node.server.Close()
+	})
+	node.manager = manager(obj)
+	return node, err
 }
 
 func (node *node) Initialize() {
-    publicKey, address := node.engine.initialize()
-    node.infos = util.NewInfos(publicKey, address)
-    node.server = server( com.NewServer(node) )
-    node.server.SetHandler(node.manager.GetHandleConnection())
-    node.light = tool.NewLightServer()
-    node.light.Start()
+	publicKey, address := node.engine.initialize()
+	node.infos = util.NewInfos(publicKey, address)
+	node.server = server(com.NewServer(node))
+	node.server.SetHandler(node.manager.GetHandleConnection())
+	node.light = tool.NewLightServer()
+	node.light.Start()
 }
 
 func (node *node) SetConfig(config string) {
-    if len(config) > 0 {
-        node.manager.SetConfig(config)
-    }
+	if len(config) > 0 {
+		node.manager.SetConfig(config)
+	}
 }
 
 /**
  * METHODS
  */
 func (node *node) Serve() {
-    node.manager.Serve()
-    node.server.Serve()
-    node.Run()
+	node.manager.Serve()
+	node.server.Serve()
 }
 
 func (node *node) Enroll(host string, name string, isNode bool) {
-    node.infos.Name = name
-    node.infos.IsValidator = !isNode
-    infosStr := util.JsonPrettyDump(node.infos)
-    node.light.Publish("infos.json", infosStr)
-    log.Printf("Enroll as validator=%t %s : %s with %s", !isNode, node.infos.Name, node.infos.Address, host)
-    genesis, peers := util.ConnectMember(host, infosStr)
+	node.infos.Name = name
+	node.infos.IsValidator = !isNode
+	infosStr := util.JsonPrettyDump(node.infos)
+	node.light.Publish("infos.json", infosStr)
+	log.Printf("Enroll as validator=%t %s : %s with %s", !isNode, node.infos.Name, node.infos.Address, host)
+	genesis, peers := util.ConnectMember(host, infosStr)
 	log.Printf("Genesis '%s' and %x peers received", genesis["name"].(string), len(peers))
 	genesisStr := util.JsonPrettyDump(genesis)
 	node.light.Publish("genesis.json", genesisStr)
 	node.engine.configure(genesisStr)
-    node.engine.setPeers(strings.Join(peers, ","))
+	node.engine.setPeers(strings.Join(peers, ","))
 }
 
 func (node *node) Run(params ...string) {
-    if len(params) > 0 {
-        buf, err := ioutil.ReadFile(params[0])
-        if err != nil {
-            log.Fatal(err)
-        }
-        node.engine.configure(string(buf))
-    }
-    node.engine.run()
+	if len(params) > 0 {
+		buf, err := ioutil.ReadFile(params[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		node.engine.configure(string(buf))
+	}
+	node.engine.run()
 }
 
 func (node *node) Connect(host string) {
-    node.light.Publish("infos.json", node.GetInfos())
-    log.Printf("Enroll as validator=%t %s : %s with %s", false, "anonymous", node.infos.Address, host)
-    genesisStr := util.FetchGenesis(host)
+	node.light.Publish("infos.json", node.GetInfos())
+	log.Printf("Enroll as validator=%t %s : %s with %s", false, "anonymous", node.infos.Address, host)
+	genesisStr := util.FetchGenesis(host)
 	node.light.Publish("genesis.json", genesisStr)
 	node.engine.configure(genesisStr)
-    infos := util.FetchInfos(host)
-    peers := []string{infos.Enode()}
-    node.engine.setPeers(strings.Join(peers, ","))
+	infos := util.FetchInfos(host)
+	peers := []string{infos.Enode()}
+	node.engine.setPeers(strings.Join(peers, ","))
 }
 
 /**
  * GETTERS & SETTERS
  */
 func (node *node) SetLimit(limit int) {
-    node.manager.SetLimit(limit)
+	node.manager.SetLimit(limit)
 }
 
 func (node *node) SetPrivateKey(privateKey string) {
-    node.engine.setPrivateKey(privateKey)
+	node.engine.setPrivateKey(privateKey)
 }
 
 func (node *node) SetPeers(peers string) {
-    node.engine.setPeers(peers)
+	node.engine.setPeers(peers)
 }
 
 func (node *node) SetDiscover(discover bool) {
-    node.engine.setDiscover(discover)
+	node.engine.setDiscover(discover)
 }
 
 func (node *node) GetServerPort() string {
-    return com.ServerPort
+	return com.ServerPort
 }
 
 func (node *node) GetInfos() string {
-    return util.JsonPrettyDump(node.infos)
+	return util.JsonPrettyDump(node.infos)
 }
 
 func (node *node) GetGenesis() string {
-    return util.JsonPrettyDump(node.manager.GetGenesis())
+	return util.JsonPrettyDump(node.manager.GetGenesis())
 }
 
 func (node *node) GetNodes() string {
-    return util.JsonPrettyDump(node.manager.GetNodes())
+	return util.JsonPrettyDump(node.manager.GetNodes())
 }
-

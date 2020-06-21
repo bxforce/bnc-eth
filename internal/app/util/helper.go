@@ -17,67 +17,67 @@ limitations under the License.
 package util
 
 import (
-    "log"
-    "os"
-    "net/http"
-    "errors"
-    "io/ioutil"
-    "encoding/json"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
 )
 
 func JsonPrettyDump(obj interface{}) string {
-    jsonBytes, err := json.MarshalIndent(obj, "", "\t")
-    if err != nil {
-        log.Fatal(err)
-    }
-    return string(jsonBytes)+"\n"
+	jsonBytes, err := json.MarshalIndent(obj, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(jsonBytes) + "\n"
 }
 
 func JsonDump(obj interface{}) string {
-    jsonBytes, err := json.Marshal(obj)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return string(jsonBytes)
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(jsonBytes)
 }
 
 func JsonLoad(file string) (map[string]interface{}, error) {
-    if len(file) == 0 {
-        return nil, nil
-    }
-    _, err := os.Stat(file)
-    if os.IsNotExist(err) {
-        return nil, errors.New("'"+file+"': no such file or directory")
-    }
+	if len(file) == 0 {
+		return nil, nil
+	}
+	_, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		return nil, errors.New("'" + file + "': no such file or directory")
+	}
 	buf, err := ioutil.ReadFile(file)
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 	content := make(map[string]interface{})
 	err = json.Unmarshal([]byte(buf), &content)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-    return content, nil
+	return content, nil
 }
 
 func fetch(url string) string {
-    res, err := http.Get(url)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer res.Body.Close()
-    body, err := ioutil.ReadAll(res.Body)
-    if err != nil {
-        log.Fatal(err)
-    }    
-    return string(body)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(body)
 }
 
 func FetchInfos(host string) *Infos {
-    return ParseInfos(fetch("http://"+host+"/infos.json"))
+	return ParseInfos(fetch("http://" + host + "/infos.json"))
 }
 
 func FetchGenesis(host string) string {
-    return fetch("http://"+host+"/genesis.json")
+	return fetch("http://" + host + "/genesis.json")
 }
