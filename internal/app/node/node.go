@@ -32,6 +32,7 @@ type engine interface {
 	setDiscover(bool)
 	initialize() (string, string)
 	configure(string)
+	isReady() bool
 	run()
 }
 
@@ -86,6 +87,10 @@ func (node *node) SetConfig(config string) {
 	if len(config) > 0 {
 		node.manager.SetConfig(config)
 	}
+}
+
+func (node *node) IsReady() bool {
+	return node.engine.isReady()
 }
 
 /**

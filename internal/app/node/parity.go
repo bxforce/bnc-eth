@@ -132,6 +132,26 @@ func (parity *parity) configure(genesis string) {
 	}
 }
 
+func (parity *parity) isReady() bool {
+	_, err := os.Stat(signerFile)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(peersFile)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(genesisFile)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(configFile)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (parity *parity) run() {
 	buf, err := ioutil.ReadFile(peersFile)
 	if err != nil {

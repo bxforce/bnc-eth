@@ -52,14 +52,20 @@ func main() {
 					node.SetConfig(ctx.String("config"))
 					node.Initialize()
 					enroll := ctx.String("enroll")
-					if len(enroll) > 0 {
-						go func() {
-							time.Sleep(2 * time.Second)
-							node.Enroll("localhost:"+node.GetServerPort(), enroll, ctx.Bool("node"))
+					if len(enroll) > 0 && node.IsReady() {
+						node.Run()
+					} else {
+						if len(enroll) > 0 {
+							go func() {
+								time.Sleep(2 * time.Second)
+								node.Enroll("localhost:"+node.GetServerPort(), enroll, ctx.Bool("node"))
+							}()
+						}
+						node.Serve()
+						if len(enroll) > 0 {
 							node.Run()
-						}()
+						}
 					}
-					node.Serve()
 					return nil
 				},
 			},
@@ -80,7 +86,9 @@ func main() {
 						return errors.New("Error: enroll name is required")
 					}
 					node.Initialize()
-					node.Enroll(bootstrap, ctx.String("enroll"), ctx.Bool("node"))
+					if !node.IsReady() {
+						node.Enroll(bootstrap, ctx.String("enroll"), ctx.Bool("node"))
+					}
 					node.Run()
 					return nil
 				},
